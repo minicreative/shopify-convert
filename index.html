@@ -1,0 +1,23 @@
+<html>
+    <head>
+        <title>Perfect Fit Inventory Converter</title>
+        <script src="node_modules/jquery/dist/jquery.js" type="text/javascript"></script>
+        <script src="node_modules/papaparse/papaparse.js" type="text/javascript"></script>
+        <script src="script.js" type="text/javascript"></script>
+		<style>
+			body {margin:30px; font-family:'Helvetica', 'Arial', sans-serif; line-height:1.6;}
+			section {margin:50px 0px;}
+			h1, h2, h3 {margin:10px 0px;}
+		</style>
+    </head>
+    <body>
+        <h1>Perfect Fit Inventory Converter</h1>
+		Products CSV: <input type="file" id="ProductsUpload" /><br />
+		<section>
+			<h2>Shopify</h2>
+	        Shopify Template: <input type="file" id="ShopifyUpload" /><br /><br />
+	        <button onclick="startShopify()">Create Shopify CSV</button>
+	        <div id="shopifyOutput"></div>
+		</section>
+    </body>
+</html>
