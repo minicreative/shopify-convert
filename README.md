@@ -1,2 +1,2 @@
 # shopify-convert  
-CSV parsing tool to create a Shopify import fil
+CSV parsing tool to create a Shopify import CSV
