@@ -1,7 +1,7 @@
 // Shopify =====================================================================
 
 // Get Shopify Row: returns formatted row to push into CSV
-var getShopifyRow = function () {
+var makeShopifyRow = function () {
 
 	// Required Shopify Fields: fields required for import
 	const requiredShopifyFields = {
@@ -170,9 +170,12 @@ function createShopifyCSV(parsedProducts) {
 
     // Make Shopify headers row, push into output
     var headers = new Array();
-	var shopifyHeaders = getShopifyRow();
+	var shopifyHeaders = makeShopifyRow();
     for (var key in shopifyHeaders) headers.push(shopifyHeaders[key].heading);
 	output.push(headers);
+
+	// Setup image column keys
+	var imageColumns = ["image1", "image2", "image3", "image4"];
 
     // Get products array
     var data = parsedProducts.data;
@@ -180,186 +183,145 @@ function createShopifyCSV(parsedProducts) {
 	// Remove META rows
 	data = data.splice(2, data.length);
 
-	// Create products array with rows that have a UPC
-	var products = new Array();
+	// Create variants array with rows that have a UPC
+	var variants = new Array();
 	for (var i in data) {
-		if (data[i].upc) products.push(data[i]);
+		if (data[i].upc) variants.push(data[i]);
 	}
 
-	console.log(products);
+	// Create products hashmap based on title
+	var products = {};
+	for (var i in variants) {
 
-    // // Format parents
-    // for (var i in parents) {
-	//
-    //     // Create outlook block & error flag
-    //     var outputBlock = new Array();
-	// 	var error = false;
-	//
-    //     // Initialize parent
-    //     var par = parents[i];
-	//
-    //     // Initialize empty array
-    //     var product = new Array(len);
-	//
-    //     // Create handle
-    //     var handle = null;
-    //     handle = par.productname.replace(/[^\w\s]/gi, "").replace(/\s+/g, "-").toLowerCase();
-	//
-    //     // Set parent variables ======================
-    //     product[0] = handle; // Handle
-    //     product[1] = par.productname; // Title
-    //     product[2] = par.productdescription_abovepricing; // Body (HTML)
-    //     product[3] = par.productmanufacturer; // Vendor
-    //     product[6] = published; // Published
-    //     product[24] = par.images[0]; // Image Src (first image)
-    //     product[25] = par.photo_alttext; // Image Alt Text
-    //     product[31] = par.metatag_title; // SEO Title
-    //     product[32] = par.metatag_description; // SEO Description
-	//
-    //     par.existingchildren = {};
-    //     par.hasSize = null;
-    //     par.hasColor = null;
-	//
-    //     // Setup variants =============================
-    //     if (par.children && par.children.length > 0) {
-	//
-    //         // Iterate through children
-    //         for (var i in par.children) {
-	//
-    //             // Initialize child
-    //             var child = par.children[i];
-	//
-    //             // Parse out variant string from title =================================
-    //             var parlen = par.productname.length;
-    //             var chlen = child.productname.length;
-    //             var iden = child.productname.substr(parlen, chlen-1);
-	//
-    //             // Check for errors, if so, break
-    //             if (iden.charAt(0) != " " && iden.charAt(0) != "-") {
-    //                 console.log(par.productname+" (Variant parsing error)");
-    //                 productError = true;
-    //                 break;
-    //             }
-	//
-    //             // Get values from string of variants
-    //             var firstString = false;
-    //             var firstDivider = false;
-    //             var secondString = false;
-    //             var sizeIden = "";
-    //             var colorIden = "";
-    //             for (var j=0; j < iden.length; j++) {
-	//
-    //                 // Iterate until first string starts
-    //                 if (!firstString && !firstDivider && !secondString) {
-    //                     if (iden.charAt(j) != " " && iden.charAt(j) != "-") firstString = true;
-    //                 }
-	//
-    //                 // Save characters to sizeIden until dash
-    //                 if (firstString && !firstDivider && !secondString) {
-    //                     if (iden.charAt(j) != " " && iden.charAt(j) != "-") sizeIden += iden.charAt(j);
-    //                     if (iden.charAt(j) == "-") firstDivider = true;
-    //                 }
-	//
-    //                 // Pass over spaces and dashes until other character
-    //                 if (firstString && firstDivider && !secondString) {
-    //                     if (iden.charAt(j) != " " && iden.charAt(j) != "-") secondString = true;
-    //                 }
-	//
-    //                 // Save characters to colorIden until dash, if dash break
-    //                 if (firstString && firstDivider && secondString) {
-    //                     if (iden.charAt(j) == "-") break;
-    //                     colorIden += iden.charAt(j);
-    //                 }
-    //             }
-	//
-    //             // Prevent invalid options child
-    //             var childHasSize = (sizeIden != "");
-    //             var childHasColor = (colorIden != "") || (colorIden.length < 3);
-    //             if (par.hasSize === null) par.hasSize = childHasSize;
-    //             if (par.hasColor === null) par.hasColor = childHasColor;
-    //             if (par.hasSize != childHasSize || par.hasColor != childHasColor) {
-    //                 productError = true;
-    //             }
-	//
-    //             // Prevent duplicate children
-    //             var childkey = sizeIden+colorIden;
-    //             if (par.existingchildren[childkey]) {
-    //                 productError = true;
-    //             }
-    //             else par.existingchildren[childkey] = true;
-	//
-    //             // Setup variables
-    //             if (!child.saleprice) {
-    //                 child.saleprice = child.productprice;
-    //                 child.productprice = null;
-    //             }
-	//
-    //             // Add first variant to parent row
-    //             if (i == 0) {
-    //                 product[7] = "Size"; // Option1 Name
-    //                 product[8] = sizeIden; // Option1 Value
-    //                 product[9] = "Color"; // Option2 Name
-    //                 product[10] = colorIden; // Option3 Value
-    //                 product[13] = child.vendor_partno; // Variant SKU
-    //                 product[14] = child.productweight*453; // Variant Grams
-    //                 product[15] = "shopify"; // Variant Inventory Tracker
-    //                 if (!child.stockstatus.length) product[16] = 0;
-    //                 else product[16] = child.stockstatus; // Variant Inventory QTY
-    //                 product[17] = "deny"; // Variant Inventory Policy
-    //                 product[18] = "manual"; // Variant Fulfillment Service
-    //                 product[19] = child.saleprice; // Variant Price
-    //                 if (child.productprice) product[20] = child.productprice; // Variant Compare at Price
-    //                 product[21] = "TRUE"; // Variant Requires Shipping
-    //                 product[22] = "TRUE"; // Variant Taxable
-	//
-    //                 // Push parent row into output
-    //                 outputBlock.push(product);
-	//
-    //             }
-	//
-    //             // Add other variants to parent row
-    //             else {
-	//
-    //                 // Create row for subproduct
-    //                 var subprod = new Array(len);
-	//
-    //                 // Add variables to row
-    //                 subprod[0] = handle;
-    //                 subprod[7] = "Size"; // Option1 Name
-    //                 subprod[8] = sizeIden; // Option1 Value
-    //                 subprod[9] = "Color"; // Option2 Name
-    //                 subprod[10] = colorIden; // Option3 Value
-    //                 subprod[13] = child.vendor_partno; // Variant SKU
-    //                 subprod[14] = child.productweight*453; // Variant Grams
-    //                 subprod[15] = "shopify"; // Variant Inventory Tracker
-    //                 if (!child.stockstatus.length) subprod[16] = 0;
-    //                 else subprod[16] = child.stockstatus; // Variant Inventory QTY
-    //                 subprod[17] = "deny"; // Variant Inventory Policy
-    //                 subprod[18] = "manual"; // Variant Fulfillment Service
-    //                 subprod[19] = child.saleprice; // Variant Price
-    //                 if (child.productprice) subprod[20] = child.productprice; // Variant Compare at Price
-    //                 subprod[21] = "TRUE"; // Variant Requires Shipping
-    //                 subprod[22] = "TRUE"; // Variant Taxable
-	//
-    //                 // Push subproduct into output
-    //                 outputBlock.push(subprod);
-    //             }
-    //         }
-    //     }
-	//
-    //     // Setup extra images ========================
-    //     if (par.images.length > 1) {
-    //         for (var i=1; i < par.images.length; i++) {
-    //             var image = new Array(len);
-    //             image[0] = handle;
-    //             image[24] = par.images[i];
-    //             outputBlock.push(image);
-    //         }
-    //     }
-	//
-    //     // Push output block if no errors
-    //     if (!error) for (var i in outputBlock) output.push(outputBlock[i]);
-    // }
+		// Determine key for hashmap
+		var key = variants[i].title;
+
+		// Create array for product if neccesary
+		if (!products[key]) products[key] = new Array();
+
+		// Push variant into product
+		products[key].push(variants[i]);
+	}
+
+	// For each product...
+	for (var key in products) {
+
+		// Initialize product group
+		var group = products[key];
+		var images = {};
+
+		// Iterate through group to find parent (based on description)
+		var parent = null;
+		for (var i in group) {
+			if (group[i].description) {
+				parent = group[i];
+				break;
+			}
+		}
+
+		// Sort group so parent is first
+		var sortedGroup = new Array();
+		sortedGroup.push(parent);
+		for (var i in group) if (parent && group[i].upc != parent.upc) sortedGroup.push(group[i]);
+		group = sortedGroup;
+
+		// If no parent, print error with key
+		if (!parent) console.log('Error: no parent found for '+key);
+
+		// Otherwise, if parent found, iterate through group and make rows
+		else for (var i in group) {
+
+			// Initialize row and variant
+			var row = makeShopifyRow();
+			var variant = group[i];
+
+			// Make handle
+			var handle = parent.title.replace(/[^\w\s]/gi, '').replace(/\s+/g, '-').toLowerCase();
+
+			// Add handle to row
+			row.handle.value = handle;
+
+			// Handle parent fields
+			if (variant.upc == parent.upc) {
+
+				// Set basic parent variables
+				row.title.value = variant.title;
+				row.vendor.value = variant.brand;
+				row.image.value = variant.mainImage;
+
+				// Setup body
+				var body = "";
+				body += "<p>"+variant.description+"</p>";
+				// Add features
+				// Add dimensions
+				// Add columns based on value
+				row.body.value = body;
+
+				// Setup tags
+				row.tags.value = "";
+
+			}
+
+			// Handle fields specifically for non-parents
+			else {
+				images[variant.mainImage] = true;
+			}
+
+			// Handle images
+			for (var j in imageColumns) {
+				images[variant[imageColumns[j]]] = true;
+			}
+
+			// Handle variant options
+			var options = [];
+			if (variant.size && variant.size != 'N/A') options.push({
+				name: 'Size',
+				value: variant.size,
+			});
+			if (variant.color && variant.color != 'N/A') options.push({
+				name: 'Color',
+				value: variant.color,
+			});
+			for (var j in options) {
+				row['o'+(parseInt(j)+1)+'name'].value = options[j].name;
+				row['o'+(parseInt(j)+1)+'value'].value = options[j].value;
+			};
+
+			// Handle basic variant values
+			row.type.value = parent.category;
+			row.sku.value = variant.upc;
+			row.barcode.value = variant.upc;
+			row.grams.value = ""+parseInt(variant.indPackWeight)*453;
+			row.price.value = "9.99";
+
+			// Handle default variant values
+			row.published.value = "TRUE";
+			row.inventory.value = "shopify";
+			row.policy.value = "deny";
+			row.qty.value = "50";
+			row.fulfillment.value = "manual";
+			row.requireShipping.value = "TRUE";
+			row.taxable.value = "TRUE";
+			row.giftCard.value = "FALSE";
+
+			// Add variant to output
+			output.push(rowObjectToArray(row));
+		}
+
+		// Setup rows for images
+		for (var url in images) {
+
+			// Initialize row and image
+			var row = makeShopifyRow();
+
+			// Setup image values
+			row.handle.value = handle;
+			row.image.value = url;
+
+			// Add image to output
+			output.push(rowObjectToArray(row));
+		}
+	}
 
     // Output link to file
     var shopifyResult = Papa.unparse(output);
@@ -379,3 +341,11 @@ var objectToArray = function (object) {
 var clone = function (object) {
 	return JSON.parse(JSON.stringify(object));
 }
+var rowObjectToArray = function (object) {
+	var output = new Array();
+	for (var key in object) {
+		if (object[key].value) output.push(object[key].value);
+		else output.push("");
+	}
+	return output;
+};
