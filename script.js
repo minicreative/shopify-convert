@@ -146,6 +146,10 @@ var makeShopifyRow = function () {
 	return clone(requiredShopifyFields);
 };
 
+// Key lists
+const imageColumns = ["image1", "image2", "image3", "image4"];
+const falseStrings = ["NO", "no", "NO ", "no ", "n/a", "N/A"];
+
 // Start Shopify: gets uploaded CSVs from DOM, parses with PapaParse, sends to formatter
 function startShopify() {
 
@@ -174,9 +178,6 @@ function createShopifyCSV(parsedProducts) {
     for (var key in shopifyHeaders) headers.push(shopifyHeaders[key].heading);
 	output.push(headers);
 
-	// Setup image column keys
-	var imageColumns = ["image1", "image2", "image3", "image4"];
-
     // Get products array
     var data = parsedProducts.data;
 
@@ -194,7 +195,8 @@ function createShopifyCSV(parsedProducts) {
 	for (var i in variants) {
 
 		// Determine key for hashmap
-		var key = variants[i].title;
+		var key = variants[i].pid.substring(0,9);
+		console.log(key);
 
 		// Create array for product if neccesary
 		if (!products[key]) products[key] = new Array();
@@ -209,14 +211,13 @@ function createShopifyCSV(parsedProducts) {
 		// Initialize product group
 		var group = products[key];
 		var images = {};
+		var colors = {};
 
-		// Iterate through group to find parent (based on description)
+		// Iterate through group to find parent & populate colors
 		var parent = null;
 		for (var i in group) {
-			if (group[i].description) {
-				parent = group[i];
-				break;
-			}
+			colors[group[i].color] = true;
+			if (group[i].description && !parent) parent = group[i];
 		}
 
 		// Sort group so parent is first
@@ -249,27 +250,46 @@ function createShopifyCSV(parsedProducts) {
 				row.vendor.value = variant.brand;
 				row.image.value = variant.mainImage;
 
-				// Setup body
+				// Handle images
+				for (var j in imageColumns) {
+					images[variant[imageColumns[j]]] = true;
+				}
+
+				// Setup body ============================
 				var body = "";
 				body += "<p>"+variant.description+"</p>";
+
 				// Add features
+
 				// Add dimensions
+
 				// Add columns based on value
+
+				// Add body to row
 				row.body.value = body;
 
-				// Setup tags
+				// Setup tags =============================
+				var tags = [];
+
+				// Tag for brand
+				tags.push("Brands_"+variant.brand);
+
+				// Tags for technology
+				if (stringToBoolean(parent.heated)) tags.push("Technology_Heated");
+				else tags.push("Technology_Non-Heated");
+				if (stringToBoolean(parent.cooling)) tags.push("Technology_Cooling");
+				if (stringToBoolean(parent.allergy)) tags.push("Technology_Hypoallergenic");
+				if (stringToBoolean(parent.waterproof)) tags.push("Technology_Waterproof");
+
+				// Tags for color
+				for (var color in colors) tags.push("Color_"+color);
+
+				// Add tags to row
 				row.tags.value = "";
-
-			}
-
-			// Handle fields specifically for non-parents
-			else {
-				images[variant.mainImage] = true;
-			}
-
-			// Handle images
-			for (var j in imageColumns) {
-				images[variant[imageColumns[j]]] = true;
+				for (var j in tags) {
+					row.tags.value += tags[j];
+					if (j < tags.length-1) row.tags.value += ",";
+				}
 			}
 
 			// Handle variant options
@@ -349,3 +369,7 @@ var rowObjectToArray = function (object) {
 	}
 	return output;
 };
+var stringToBoolean = function (string) {
+	for (var i in falseStrings) if (string == falseStrings[i]) return false;
+	return true;
+}
