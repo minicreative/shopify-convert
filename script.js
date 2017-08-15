@@ -195,8 +195,7 @@ function createShopifyCSV(parsedProducts) {
 	for (var i in variants) {
 
 		// Determine key for hashmap
-		var key = variants[i].pid.substring(0,9);
-		console.log(key);
+		var key = variants[i].pid.substring(0,10);
 
 		// Create array for product if neccesary
 		if (!products[key]) products[key] = new Array();
@@ -259,11 +258,36 @@ function createShopifyCSV(parsedProducts) {
 				var body = "";
 				body += "<p>"+variant.description+"</p>";
 
-				// Add features
+				// Get array of features
+				var features = variant.features.split("\n");
 
-				// Add dimensions
+				// If more than one feature...
+				if (features.length > 1) {
 
-				// Add columns based on value
+					// Open unordered list
+					body += "<ul>";
+
+					// For each feature...
+					for (var j in features) {
+
+						// Initialize feature
+						var feature = features[j];
+
+						// Set k to the first alphanumeric character
+						for (var k=0; k<feature.length; k++) if (feature[k].match(/^[0-9a-zA-Z]+$/)) break;
+
+						// Remove non-alphanumeric characters at beginning of string
+						feature = feature.substring(k,feature.length);
+
+						// Add bullet to list if feature is correct
+						if (feature && feature != "" && feature != " ") {
+							body += "<li>"+feature+"</li>";
+						}
+					}
+
+					// Close unordered list
+					body += "</ul>";
+				}
 
 				// Add body to row
 				row.body.value = body;
