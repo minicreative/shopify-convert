@@ -148,7 +148,25 @@ var makeShopifyRow = function () {
 
 // Key lists
 const imageColumns = ["image1", "image2", "image3", "image4"];
-const falseStrings = ["NO", "no", "NO ", "no ", "n/a", "N/A"];
+const detailColumns = {
+	warranty: "Warranty",
+	care: "Care",
+	cordLength: "Cord Length",
+	material: "Material",
+	construction: "Construction",
+	faceFabric: "Face Fabric",
+	reverseFabric: "Reverse Fabric",
+	fillType: "Fill",
+	skirtFabric: "Skirt Fabric",
+	threadCount: "Thread Count",
+	pillowCoverMaterial: "Pillow Cover Material",
+	pillowMaterial: "Pillow Material",
+	pillowShell: "Pillow Shell",
+	removableCover: "Removable Cover",
+	pillowThreadCount: "Pillow Thread Count",
+	pocketDepth: "Pocket Depth",
+}
+const falseStrings = [null, "", " ", "NO", "no", "NO ", "no ", "n/a", "N/A", "Not a pillow", "Not a Pillow", "NO Warranty"];
 
 // Start Shopify: gets uploaded CSVs from DOM, parses with PapaParse, sends to formatter
 function startShopify() {
@@ -209,13 +227,23 @@ function createShopifyCSV(parsedProducts) {
 
 		// Initialize product group
 		var group = products[key];
-		var images = {};
-		var colors = {};
 
-		// Iterate through group to find parent & populate colors
+		// Initialize arrays and objects for group
+		var images = [];
+		var colors = {};
+		var sizes = {};
+
+		// Iterate through group to find parent & populate sizes & colors
 		var parent = null;
 		for (var i in group) {
+
+			// Populate colors
 			colors[group[i].color] = true;
+
+			// Populate sizes
+			if (group[i].size) sizes[group[i].size] = group[i].dimensions;
+
+			// Find parent
 			if (group[i].description && !parent) parent = group[i];
 		}
 
@@ -251,7 +279,7 @@ function createShopifyCSV(parsedProducts) {
 
 				// Handle images
 				for (var j in imageColumns) {
-					images[variant[imageColumns[j]]] = true;
+					if (stringToBoolean(variant[imageColumns[j]])) images.push(variant[imageColumns[j]]);
 				}
 
 				// Setup body ============================
@@ -259,7 +287,7 @@ function createShopifyCSV(parsedProducts) {
 				body += "<p>"+variant.description+"</p>";
 
 				// Get array of features
-				var features = variant.features.split("\n");
+				var features = variant.features.split(new RegExp("\r|\n"));
 
 				// If more than one feature...
 				if (features.length > 1) {
@@ -288,6 +316,23 @@ function createShopifyCSV(parsedProducts) {
 					// Close unordered list
 					body += "</ul>";
 				}
+
+				// Pull information from columns
+				body += "<p>";
+				for (var detailKey in detailColumns) {
+					if (stringToBoolean(variant[detailKey]))
+						body += "<b>"+detailColumns[detailKey]+":</b> "+variant[detailKey]+"<br />";
+				}
+				body += "</p>";
+
+				// Print sizes
+				if (countKeys(sizes)) {
+					body += "<p><b>Sizes</b>:<br />";
+					for (var size in sizes) body += "<b>"+size+":</b> "+sizes[size]+"<br />";
+					body += "</p>";
+				}
+
+				if (stringToBoolean(variant.origin)) body += "<p>Made in "+variant.origin+"</p>";
 
 				// Add body to row
 				row.body.value = body;
@@ -353,14 +398,14 @@ function createShopifyCSV(parsedProducts) {
 		}
 
 		// Setup rows for images
-		for (var url in images) {
+		for (var i in images) {
 
 			// Initialize row and image
 			var row = makeShopifyRow();
 
 			// Setup image values
 			row.handle.value = handle;
-			row.image.value = url;
+			row.image.value = images[i];
 
 			// Add image to output
 			output.push(rowObjectToArray(row));
@@ -397,3 +442,8 @@ var stringToBoolean = function (string) {
 	for (var i in falseStrings) if (string == falseStrings[i]) return false;
 	return true;
 }
+var countKeys = function (object) {
+	var count = 0;
+	for (var key in object) if (object.hasOwnProperty(key)) count++;
+	return count;
+};
