@@ -152,6 +152,7 @@ const detailColumns = {
 	warranty: "Warranty",
 	care: "Care",
 	cordLength: "Cord Length",
+	closure: "Closure",
 	material: "Material",
 	construction: "Construction",
 	faceFabric: "Face Fabric",
@@ -253,8 +254,10 @@ function createShopifyCSV(parsedProducts) {
 		for (var i in group) if (parent && group[i].upc != parent.upc) sortedGroup.push(group[i]);
 		group = sortedGroup;
 
-		// If no parent, print error with key
-		if (!parent) console.log('Error: no parent found for '+key);
+		// If no parent, print error with title
+		if (!parent) {
+			console.log('Error: no parent found for '+key);
+		}
 
 		// Otherwise, if parent found, iterate through group and make rows
 		else for (var i in group) {
@@ -271,6 +274,8 @@ function createShopifyCSV(parsedProducts) {
 
 			// Handle parent fields
 			if (variant.upc == parent.upc) {
+
+				if (!variant.brand) console.log('Error: brand missing for '+key);
 
 				// Set basic parent variables
 				row.title.value = variant.title;
@@ -343,6 +348,15 @@ function createShopifyCSV(parsedProducts) {
 				// Tag for brand
 				tags.push("Brands_"+variant.brand);
 
+				// Tag for category
+				if (variant.category) tags.push("Category_"+variant.category);
+				else console.log('Error: category missing for '+key);
+
+				// Tag for cushion type
+				if (stringToBoolean(parent.cushion)) tags.push("Cushion Type_"+variant.cushion);
+
+				// Tag for fit?
+
 				// Tags for technology
 				if (stringToBoolean(parent.heated)) tags.push("Technology_Heated");
 				else tags.push("Technology_Non-Heated");
@@ -381,7 +395,7 @@ function createShopifyCSV(parsedProducts) {
 			row.sku.value = variant.upc;
 			row.barcode.value = variant.upc;
 			row.grams.value = ""+parseInt(variant.indPackWeight)*453;
-			row.price.value = "9.99";
+			row.price.value = convertPriceString(variant.price);
 
 			// Handle default variant values
 			row.published.value = "TRUE";
@@ -447,3 +461,8 @@ var countKeys = function (object) {
 	for (var key in object) if (object.hasOwnProperty(key)) count++;
 	return count;
 };
+var convertPriceString = function (string) {
+	for (var i=0; i<string.length; i++) if (string[i].match(/^[0-9]+$/)) break;
+	string = string.substring(i,string.length);
+	return string;
+}
