@@ -97,31 +97,31 @@ var makeShopifyRow = function () {
 		},
 		seoDescription: {
 			heading: "SEO Description",
-		}
+		},
+		googleCategory: {
+			heading: "Google Shopping / Google Product Category",
+		},
+		googleCondition: {
+			heading: "Google Shopping / Condition",
+		},
 	};
 
-	// Optional Shopify Fields: extra fields accepted by import
-	const optionalShopifyFields = {
+	// Remaining Shopify Fields: extra fields accepted by import
+	const remainingShopifyFields = {
 		googleMPN: {
 			heading: "Google Shopping / MPN",
-		},
-		googleAge: {
-			heading: "Google Shopping / Age Group",
 		},
 		googleGender: {
 			heading: "Google Shopping / Gender",
 		},
-		googleCategory: {
-			heading: "Google Shopping / Google Product Category",
+		googleAge: {
+			heading: "Google Shopping / Age Group",
 		},
 		googleAdWordsGrouping: {
 			heading: "Google Shopping / AdWords Grouping",
 		},
 		googleAdWordsLabels: {
 			heading: "Google Shopping / AdWords Labels",
-		},
-		googleCondition: {
-			heading: "Google Shopping / Condition",
 		},
 		googleCustom: {
 			heading: "Google Shopping / Custom Product",
@@ -160,10 +160,8 @@ const detailColumns = {
 	fillType: "Fill",
 	skirtFabric: "Skirt Fabric",
 	threadCount: "Thread Count",
-	pillowCoverMaterial: "Pillow Cover Material",
 	pillowMaterial: "Pillow Material",
 	pillowShell: "Pillow Shell",
-	removableCover: "Removable Cover",
 	pillowThreadCount: "Pillow Thread Count",
 	pocketDepth: "Pocket Depth",
 }
@@ -191,11 +189,11 @@ function createShopifyCSV(parsedProducts) {
 	// Initialize output
 	var output = new Array();
 
+	// Track categories
+	var categories = {};
+
     // Make Shopify headers row, push into output
-    var headers = new Array();
-	var shopifyHeaders = makeShopifyRow();
-    for (var key in shopifyHeaders) headers.push(shopifyHeaders[key].heading);
-	output.push(headers);
+	output.push(rowObjectToArray(makeShopifyRow(), 'heading'));
 
     // Get products array
     var data = parsedProducts.data;
@@ -207,6 +205,7 @@ function createShopifyCSV(parsedProducts) {
 	var variants = new Array();
 	for (var i in data) {
 		if (data[i].upc) variants.push(data[i]);
+		else console.log('Error: no UPC in row '+(parseInt(i, 10)+4)); // Throw UPC Error
 	}
 
 	// Create products hashmap based on title
@@ -215,6 +214,7 @@ function createShopifyCSV(parsedProducts) {
 
 		// Determine key for hashmap
 		var key = variants[i].pid.substring(0,10);
+		if (key.length < 10) console.log('Error: bad PID for '+variants[i].title); // Throw PID Error
 
 		// Create array for product if neccesary
 		if (!products[key]) products[key] = new Array();
@@ -244,7 +244,7 @@ function createShopifyCSV(parsedProducts) {
 			// Populate sizes
 			if (group[i].size) sizes[group[i].size] = group[i].dimensions;
 
-			// Find parent
+			// Initialize parent
 			if (group[i].description && !parent) parent = group[i];
 		}
 
@@ -254,10 +254,7 @@ function createShopifyCSV(parsedProducts) {
 		for (var i in group) if (parent && group[i].upc != parent.upc) sortedGroup.push(group[i]);
 		group = sortedGroup;
 
-		// If no parent, print error with title
-		if (!parent) {
-			console.log('Error: no parent found for '+key);
-		}
+		if (!parent) console.log('Error: no parent found for '+key); // Throw parent error
 
 		// Otherwise, if parent found, iterate through group and make rows
 		else for (var i in group) {
@@ -275,7 +272,14 @@ function createShopifyCSV(parsedProducts) {
 			// Handle parent fields
 			if (variant.upc == parent.upc) {
 
-				if (!variant.brand) console.log('Error: brand missing for '+key);
+				if (!variant.brand) console.log('Error: brand missing for '+key); // Throw brand error
+				if (!variant.category) console.log('Error: category missing for '+key); // Throw category error
+
+				// Track categories
+				if (variant.category) {
+					if (!categories[variant.category]) categories[variant.category] = [];
+					categories[variant.category].push(variant.title);
+				}
 
 				// Set basic parent variables
 				row.title.value = variant.title;
@@ -349,8 +353,7 @@ function createShopifyCSV(parsedProducts) {
 				tags.push("Brands_"+variant.brand);
 
 				// Tag for category
-				if (variant.category) tags.push("Category_"+variant.category);
-				else console.log('Error: category missing for '+key);
+				tags.push("Category_"+variant.category);
 
 				// Tag for cushion type
 				if (stringToBoolean(parent.cushion)) tags.push("Cushion Type_"+variant.cushion);
@@ -377,11 +380,11 @@ function createShopifyCSV(parsedProducts) {
 
 			// Handle variant options
 			var options = [];
-			if (variant.size && variant.size != 'N/A') options.push({
+			if (stringToBoolean(variant.size)) options.push({
 				name: 'Size',
 				value: variant.size,
 			});
-			if (variant.color && variant.color != 'N/A') options.push({
+			if (stringToBoolean(variant.color)) options.push({
 				name: 'Color',
 				value: variant.color,
 			});
@@ -395,7 +398,10 @@ function createShopifyCSV(parsedProducts) {
 			row.sku.value = variant.upc;
 			row.barcode.value = variant.upc;
 			row.grams.value = ""+parseInt(variant.indPackWeight)*453;
-			row.price.value = convertPriceString(variant.price);
+			row.price.value = variant.price;
+
+			// Handle variant image value
+			if (stringToBoolean(variant.mainImage)) row.variantImage.value = variant.mainImage;
 
 			// Handle default variant values
 			row.published.value = "TRUE";
@@ -406,6 +412,25 @@ function createShopifyCSV(parsedProducts) {
 			row.requireShipping.value = "TRUE";
 			row.taxable.value = "TRUE";
 			row.giftCard.value = "FALSE";
+
+			// Handle Google Shopping category
+			var googleCategory;
+			switch(parent.category) {
+				case "Accessory": googleCategory = "Home & Garden > Linens & Bedding"; break;
+				case "Bedskirt": googleCategory = "Home & Garden > Linens & Bedding > Bedding > Bedskirts"; break;
+				case "Blanket": googleCategory = "Home & Garden > Linens & Bedding > Bedding > Blankets"; break;
+				case "Furniture Cover": googleCategory = "Home & Garden > Linens & Bedding"; break;
+				case "Furniture Protector": googleCategory = "Home & Garden > Linens & Bedding"; break;
+				case "Mattress Encasement": googleCategory = "Home & Garden > Linens & Bedding"; break;
+				case "Mattress Pad": googleCategory = "Home & Garden > Linens & Bedding > Bedding > Mattress Protectors > Mattress Pads"; break;
+				case "Pillow": googleCategory = "Home & Garden > Linens & Bedding > Bedding > Pillows"; break;
+				case "Pillow Cover": googleCategory = "Home & Garden > Linens & Bedding > Bedding > Pillowcases & Shams"; break;
+				case "Throw": googleCategory = "Home & Garden > Linens & Bedding > Bedding > Blankets"; break;
+			}
+			if (googleCategory) row.googleCategory.value = googleCategory;
+
+			// Handle Google Shopping condition field
+			row.googleCondition.value = "new";
 
 			// Add variant to output
 			output.push(rowObjectToArray(row));
@@ -426,6 +451,10 @@ function createShopifyCSV(parsedProducts) {
 		}
 	}
 
+	// Print categories
+	console.log('Categories processed:');
+	console.log(categories);
+
     // Output link to file
     var shopifyResult = Papa.unparse(output);
     var downloadElement = document.createElement("a");
@@ -444,10 +473,15 @@ var objectToArray = function (object) {
 var clone = function (object) {
 	return JSON.parse(JSON.stringify(object));
 }
-var rowObjectToArray = function (object) {
+var rowObjectToArray = function (object, objectKey) {
+
+	// Setup key
+	if (!objectKey) objectKey = "value";
+
+	// Setup row array
 	var output = new Array();
 	for (var key in object) {
-		if (object[key].value) output.push(object[key].value);
+		if (object[key][objectKey]) output.push(object[key][objectKey]);
 		else output.push("");
 	}
 	return output;
@@ -461,8 +495,3 @@ var countKeys = function (object) {
 	for (var key in object) if (object.hasOwnProperty(key)) count++;
 	return count;
 };
-var convertPriceString = function (string) {
-	for (var i=0; i<string.length; i++) if (string[i].match(/^[0-9]+$/)) break;
-	string = string.substring(i,string.length);
-	return string;
-}
