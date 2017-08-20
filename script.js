@@ -400,9 +400,6 @@ function createShopifyCSV(parsedProducts) {
 			row.grams.value = ""+parseInt(variant.indPackWeight)*453;
 			row.price.value = variant.price;
 
-			// Handle variant image value
-			if (stringToBoolean(variant.mainImage)) row.variantImage.value = variant.mainImage;
-
 			// Handle default variant values
 			row.published.value = "TRUE";
 			row.inventory.value = "shopify";
