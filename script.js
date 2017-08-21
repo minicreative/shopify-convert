@@ -275,7 +275,10 @@ function createShopifyCSV(parsedProducts) {
 				if (!variant.brand) console.log('Error: brand missing for '+key); // Throw brand error
 				if (!variant.category) console.log('Error: category missing for '+key); // Throw category error
 
-				// Track categories
+				// Trim category
+				variant.category = variant.category.trim();
+
+				// Track category
 				if (variant.category) {
 					if (!categories[variant.category]) categories[variant.category] = [];
 					categories[variant.category].push(variant.title);
@@ -337,7 +340,7 @@ function createShopifyCSV(parsedProducts) {
 				// Print sizes
 				if (countKeys(sizes)) {
 					body += "<p><b>Sizes</b>:<br />";
-					for (var size in sizes) body += "<b>"+size+":</b> "+sizes[size]+"<br />";
+					for (var size in sizes) body += size+": "+sizes[size]+"<br />";
 					body += "</p>";
 				}
 
@@ -357,8 +360,6 @@ function createShopifyCSV(parsedProducts) {
 
 				// Tag for cushion type
 				if (stringToBoolean(parent.cushion)) tags.push("Cushion Type_"+variant.cushion);
-
-				// Tag for fit?
 
 				// Tags for technology
 				if (stringToBoolean(parent.heated)) tags.push("Technology_Heated");
@@ -398,11 +399,13 @@ function createShopifyCSV(parsedProducts) {
 			row.sku.value = variant.upc;
 			row.barcode.value = variant.upc;
 			row.grams.value = ""+parseInt(variant.indPackWeight)*453;
+
+			// Handle prices
 			row.price.value = variant.price;
+			row.compare.value = variant.price;
 
 			// Handle default variant values
 			row.published.value = "TRUE";
-			row.inventory.value = "shopify";
 			row.policy.value = "deny";
 			row.qty.value = "50";
 			row.fulfillment.value = "manual";
