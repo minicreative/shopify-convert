@@ -296,7 +296,12 @@ function createShopifyCSV(parsedProducts) {
 
 				// Setup body ============================
 				var body = "";
-				body += "<p>"+variant.description+"</p>";
+
+				// Format description
+				var formattedDescription = variant.description.replace(/(\r\n|\n|\r)/gm,"");
+
+				// Add description
+				body += "<p>"+formattedDescription+"</p>";
 
 				// Get array of features
 				var features = variant.features.split(new RegExp("\r|\n"));
@@ -407,25 +412,28 @@ function createShopifyCSV(parsedProducts) {
 			// Handle default variant values
 			row.published.value = "TRUE";
 			row.policy.value = "deny";
-			row.qty.value = "50";
-			row.fulfillment.value = "manual";
+			row.qty.value = 100;
+			row.inventory.value = "shopify";
+			row.fulfillment.value = "shopify-sync";
 			row.requireShipping.value = "TRUE";
 			row.taxable.value = "TRUE";
 			row.giftCard.value = "FALSE";
 
 			// Handle Google Shopping category
-			var googleCategory;
+			var googleCategory = null;
 			switch(parent.category) {
-				case "Accessory": googleCategory = "Home & Garden > Linens & Bedding"; break;
 				case "Bedskirt": googleCategory = "Home & Garden > Linens & Bedding > Bedding > Bedskirts"; break;
 				case "Blanket": googleCategory = "Home & Garden > Linens & Bedding > Bedding > Blankets"; break;
-				case "Furniture Cover": googleCategory = "Home & Garden > Linens & Bedding"; break;
-				case "Furniture Protector": googleCategory = "Home & Garden > Linens & Bedding"; break;
-				case "Mattress Encasement": googleCategory = "Home & Garden > Linens & Bedding"; break;
+				case "Furniture Cover": googleCategory = "Home & Garden > Decor > Slipcovers"; break;
+				case "Furniture Protector": googleCategory = "Home & Garden > Decor > Slipcovers"; break;
+				case "Furniture Storage": googleCategory = "Home & Garden > Decor > Slipcovers"; break;
+				case "Headboard": googleCategory = "Home & Garden"; break;
+				case "Mattress Encasement": googleCategory = "Home & Garden > Linens & Bedding > Bedding > Mattress Protectors > Mattress Encasements"; break;
 				case "Mattress Pad": googleCategory = "Home & Garden > Linens & Bedding > Bedding > Mattress Protectors > Mattress Pads"; break;
 				case "Pillow": googleCategory = "Home & Garden > Linens & Bedding > Bedding > Pillows"; break;
-				case "Pillow Cover": googleCategory = "Home & Garden > Linens & Bedding > Bedding > Pillowcases & Shams"; break;
+				case "Pillow Cover": googleCategory = "Home & Garden > Linens & Bedding > Bedding > Pillow"; break;
 				case "Throw": googleCategory = "Home & Garden > Linens & Bedding > Bedding > Blankets"; break;
+				case "Wearables": googleCategory = "Home & Garden"; break;
 			}
 			if (googleCategory) row.googleCategory.value = googleCategory;
 
