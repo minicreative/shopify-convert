@@ -407,7 +407,7 @@ function createShopifyCSV(parsedProducts) {
 
 			// Handle prices
 			row.price.value = variant.price;
-			row.compare.value = variant.price;
+			// row.compare.value = variant.price; // THIS FUNCTIONALITY IS REMOVED
 
 			// Handle default variant values
 			row.published.value = "TRUE";
