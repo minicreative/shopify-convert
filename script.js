@@ -186,6 +186,9 @@ function startShopify() {
 // Create Shopify CSV: converts inventory data to Shopify data
 function createShopifyCSV(parsedProducts) {
 
+	// Initialize messages
+	var messages = new Array();
+
 	// Initialize output
 	var output = new Array();
 
@@ -205,7 +208,7 @@ function createShopifyCSV(parsedProducts) {
 	var variants = new Array();
 	for (var i in data) {
 		if (data[i].upc) variants.push(data[i]);
-		else console.log('Error: no UPC in row '+(parseInt(i, 10)+4)); // Throw UPC Error
+		else messages.push('Error: no UPC in row '+(parseInt(i, 10)+4)); // Throw UPC Error
 	}
 
 	// Create products hashmap based on title
@@ -214,7 +217,7 @@ function createShopifyCSV(parsedProducts) {
 
 		// Determine key for hashmap
 		var key = variants[i].pid.substring(0,10);
-		if (key.length < 10) console.log('Error: bad PID for '+variants[i].title); // Throw PID Error
+		if (key.length < 10) messages.push('Error: bad PID for '+variants[i].title); // Throw PID Error
 
 		// Create array for product if neccesary
 		if (!products[key]) products[key] = new Array();
@@ -254,7 +257,7 @@ function createShopifyCSV(parsedProducts) {
 		for (var i in group) if (parent && group[i].upc != parent.upc) sortedGroup.push(group[i]);
 		group = sortedGroup;
 
-		if (!parent) console.log('Error: no parent found for '+key); // Throw parent error
+		if (!parent) messages.push('Error: no parent found for '+key); // Throw parent error
 
 		// Otherwise, if parent found, iterate through group and make rows
 		else for (var i in group) {
@@ -272,8 +275,8 @@ function createShopifyCSV(parsedProducts) {
 			// Handle parent fields
 			if (variant.upc == parent.upc) {
 
-				if (!variant.brand) console.log('Error: brand missing for '+key); // Throw brand error
-				if (!variant.category) console.log('Error: category missing for '+key); // Throw category error
+				if (!variant.brand) messages.push('Error: brand missing for '+key); // Throw brand error
+				if (!variant.category) messages.push('Error: category missing for '+key); // Throw category error
 
 				// Trim category
 				variant.category = variant.category.trim();
@@ -364,17 +367,20 @@ function createShopifyCSV(parsedProducts) {
 				tags.push("Category_"+variant.category);
 
 				// Tag for cushion type
-				if (stringToBoolean(parent.cushion)) tags.push("Cushion Type_"+variant.cushion);
+				if (stringToBoolean(variant.cushion)) tags.push("Cushion Type_"+variant.cushion);
 
 				// Tags for technology
-				if (stringToBoolean(parent.heated)) tags.push("Technology_Heated");
+				if (stringToBoolean(variant.heated)) tags.push("Technology_Heated");
 				else tags.push("Technology_Non-Heated");
-				if (stringToBoolean(parent.cooling)) tags.push("Technology_Cooling");
-				if (stringToBoolean(parent.allergy)) tags.push("Technology_Hypoallergenic");
-				if (stringToBoolean(parent.waterproof)) tags.push("Technology_Waterproof");
+				if (stringToBoolean(variant.cooling)) tags.push("Technology_Cooling");
+				if (stringToBoolean(variant.allergy)) tags.push("Technology_Hypoallergenic");
+				if (stringToBoolean(variant.waterproof)) tags.push("Technology_Waterproof");
 
 				// Tags for color
 				for (var color in colors) tags.push("Color_"+color);
+
+				// Tag for clearance
+				if (stringToBoolean(variant.clearance)) tags.push("Clearance");
 
 				// Add tags to row
 				row.tags.value = "";
@@ -407,12 +413,12 @@ function createShopifyCSV(parsedProducts) {
 
 			// Handle prices
 			row.price.value = variant.price;
-			// row.compare.value = variant.price; // THIS FUNCTIONALITY IS REMOVED
+			row.compare.value = variant.price;
 
 			// Handle default variant values
 			row.published.value = "TRUE";
 			row.policy.value = "deny";
-			row.qty.value = 100;
+			row.qty.value = 10;
 			row.inventory.value = "shopify";
 			row.fulfillment.value = "shopify-sync";
 			row.requireShipping.value = "TRUE";
@@ -459,9 +465,13 @@ function createShopifyCSV(parsedProducts) {
 		}
 	}
 
-	// Print categories
-	console.log('Categories processed:');
-	console.log(categories);
+	// Output messages to file
+	var messageContainer = document.createElement("p");
+	var messageHTML = "";
+	if (messages.length) for (var i in messages) messageHTML += messages[i]+"<br />";
+	else messageHTML += "No errors!";
+	messageContainer.innerHTML = messageHTML;
+	$("#shopifyOutput").append(messageContainer);
 
     // Output link to file
     var shopifyResult = Papa.unparse(output);
