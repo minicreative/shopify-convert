@@ -1,7 +1,7 @@
 {
-  "name": "mtsdatabase",
+  "name": "shopify-convert",
   "version": "1.0.0",
-  "description": "Database parse for MyTennisStore",
+  "description": "CSV parsing tool to generate a Shopify import file",
   "main": "index.html",
   "dependencies": {
     "jquery": "^3.1.1",
