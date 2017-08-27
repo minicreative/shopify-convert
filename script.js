@@ -420,7 +420,7 @@ function createShopifyCSV(parsedProducts) {
 			row.policy.value = "deny";
 			row.qty.value = 10;
 			row.inventory.value = "shopify";
-			row.fulfillment.value = "shopify-sync";
+			row.fulfillment.value = "manual";
 			row.requireShipping.value = "TRUE";
 			row.taxable.value = "TRUE";
 			row.giftCard.value = "FALSE";
