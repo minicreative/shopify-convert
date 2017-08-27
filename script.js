@@ -165,7 +165,7 @@ const detailColumns = {
 	pillowThreadCount: "Pillow Thread Count",
 	pocketDepth: "Pocket Depth",
 }
-const falseStrings = [null, "", " ", "NO", "no", "NO ", "no ", "n/a", "N/A", "Not a pillow", "Not a Pillow", "NO Warranty"];
+const falseStrings = [null, "", " ", "NO", "no", "NO ", "no ", "No", "n/a", "N/A", "Not a pillow", "Not a Pillow", "NO Warranty"];
 
 // Start Shopify: gets uploaded CSVs from DOM, parses with PapaParse, sends to formatter
 function startShopify() {
@@ -192,8 +192,9 @@ function createShopifyCSV(parsedProducts) {
 	// Initialize output
 	var output = new Array();
 
-	// Track categories
-	var categories = {};
+	// Track categories & cushion types
+	var allCategories = {};
+	var allCushions = {};
 
     // Make Shopify headers row, push into output
 	output.push(rowObjectToArray(makeShopifyRow(), 'heading'));
@@ -236,6 +237,7 @@ function createShopifyCSV(parsedProducts) {
 		var images = [];
 		var colors = {};
 		var sizes = {};
+		var cushions = {};
 
 		// Iterate through group to find parent & populate sizes & colors
 		var parent = null;
@@ -243,6 +245,12 @@ function createShopifyCSV(parsedProducts) {
 
 			// Populate colors
 			colors[group[i].color] = true;
+
+			// Populate cushions and allCushions
+			if (stringToBoolean(group[i].cushion)) {
+				cushions[group[i].cushion] = true;
+				allCushions[group[i].cushion] = true;
+			}
 
 			// Populate sizes
 			if (group[i].size) sizes[group[i].size] = group[i].dimensions;
@@ -283,8 +291,8 @@ function createShopifyCSV(parsedProducts) {
 
 				// Track category
 				if (variant.category) {
-					if (!categories[variant.category]) categories[variant.category] = [];
-					categories[variant.category].push(variant.title);
+					if (!allCategories[variant.category]) allCategories[variant.category] = [];
+					allCategories[variant.category].push(variant.title);
 				}
 
 				// Set basic parent variables
@@ -366,9 +374,6 @@ function createShopifyCSV(parsedProducts) {
 				// Tag for category
 				tags.push("Category_"+variant.category);
 
-				// Tag for cushion type
-				if (stringToBoolean(variant.cushion)) tags.push("Cushion Type_"+variant.cushion);
-
 				// Tags for technology
 				if (stringToBoolean(variant.heated)) tags.push("Technology_Heated");
 				else tags.push("Technology_Non-Heated");
@@ -378,6 +383,9 @@ function createShopifyCSV(parsedProducts) {
 
 				// Tags for color
 				for (var color in colors) tags.push("Color_"+color);
+
+				// Tags for cushion type
+				for (var cushion in cushions) tags.push("Cushion Type_"+cushion);
 
 				// Tag for clearance
 				if (stringToBoolean(variant.clearance)) tags.push("Clearance");
@@ -472,6 +480,18 @@ function createShopifyCSV(parsedProducts) {
 	else messageHTML += "No errors!";
 	messageContainer.innerHTML = messageHTML;
 	$("#shopifyOutput").append(messageContainer);
+
+	// Output categories and cushions to file
+	var listContainer = document.createElement("p");
+	var listHTML = "";
+	listHTML += "<b>Categories:</b> ";
+	for (var key in allCategories) listHTML += key+', ';
+	listHTML += "<br />";
+	listHTML += "<b>Cushion Types:</b> ";
+	for (var key in allCushions) listHTML += key+', ';
+	listContainer.innerHTML = listHTML;
+	$("#shopifyOutput").append(listContainer);
+
 
     // Output link to file
     var shopifyResult = Papa.unparse(output);
