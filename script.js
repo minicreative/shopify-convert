@@ -192,9 +192,8 @@ function createShopifyCSV(parsedProducts) {
 	// Initialize output
 	var output = new Array();
 
-	// Track categories & cushion types
+	// Track categories
 	var allCategories = {};
-	var allCushions = {};
 
     // Make Shopify headers row, push into output
 	output.push(rowObjectToArray(makeShopifyRow(), 'heading'));
@@ -237,7 +236,9 @@ function createShopifyCSV(parsedProducts) {
 		var images = [];
 		var colors = {};
 		var sizes = {};
-		var cushions = {};
+		var cushionTags = {};
+		var fitTags = {};
+		var styleTags = {};
 
 		// Iterate through group to find parent & populate sizes & colors
 		var parent = null;
@@ -246,11 +247,10 @@ function createShopifyCSV(parsedProducts) {
 			// Populate colors
 			colors[group[i].color] = true;
 
-			// Populate cushions and allCushions
-			if (stringToBoolean(group[i].cushion)) {
-				cushions[group[i].cushion] = true;
-				allCushions[group[i].cushion] = true;
-			}
+			// Populate cushion, fit and style tags
+			if (stringToBoolean(group[i].cushion)) cushionTags[group[i].cushion] = true;
+			if (stringToBoolean(group[i].fit)) fitTags[group[i].fit] = true;
+			if (stringToBoolean(group[i].style)) styleTags[group[i].style] = true;
 
 			// Populate sizes
 			if (group[i].size) sizes[group[i].size] = group[i].dimensions;
@@ -384,8 +384,10 @@ function createShopifyCSV(parsedProducts) {
 				// Tags for color
 				for (var color in colors) tags.push("Color_"+color);
 
-				// Tags for cushion type
-				for (var cushion in cushions) tags.push("Cushion Type_"+cushion);
+				// Tags for cushion, fit and style
+				for (var cushion in cushionTags) tags.push("Cushion Type_"+cushion);
+				for (var style in styleTags) tags.push("Furniture Type_"+style);
+				for (var fit in fitTags) tags.push("Fit Type_"+fit);
 
 				// Tag for clearance
 				if (stringToBoolean(variant.clearance)) tags.push("Clearance");
@@ -481,14 +483,11 @@ function createShopifyCSV(parsedProducts) {
 	messageContainer.innerHTML = messageHTML;
 	$("#shopifyOutput").append(messageContainer);
 
-	// Output categories and cushions to file
+	// Output categories to file
 	var listContainer = document.createElement("p");
 	var listHTML = "";
 	listHTML += "<b>Categories:</b> ";
 	for (var key in allCategories) listHTML += key+', ';
-	listHTML += "<br />";
-	listHTML += "<b>Cushion Types:</b> ";
-	for (var key in allCushions) listHTML += key+', ';
 	listContainer.innerHTML = listHTML;
 	$("#shopifyOutput").append(listContainer);
 
