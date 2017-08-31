@@ -415,6 +415,9 @@ function createShopifyCSV(parsedProducts) {
 				row['o'+(parseInt(j)+1)+'value'].value = options[j].value;
 			};
 
+			// Handle variant main image
+			if (variant.mainImage) images.push(variant.mainImage);
+
 			// Handle basic variant values
 			row.type.value = parent.category;
 			row.sku.value = variant.upc;
