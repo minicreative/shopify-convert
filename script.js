@@ -298,7 +298,6 @@ function createShopifyCSV(parsedProducts) {
 				// Set basic parent variables
 				row.title.value = variant.title;
 				row.vendor.value = variant.brand;
-				row.image.value = variant.mainImage;
 
 				// Handle images
 				for (var j in imageColumns) {
@@ -398,13 +397,10 @@ function createShopifyCSV(parsedProducts) {
 					row.tags.value += tags[j];
 					if (j < tags.length-1) row.tags.value += ",";
 				}
-			} else {
-
-				// Handle variant image for all non-parent rows
-				if (variant.mainImage) row.variantImage.value = variant.mainImage;
 			}
 
-
+			// Setup variant image for row
+			if (stringToBoolean(variant.mainImage)) row.variantImage.value = variant.mainImage;
 
 			// Handle variant options
 			var options = [];
