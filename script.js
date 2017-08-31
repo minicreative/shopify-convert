@@ -398,7 +398,13 @@ function createShopifyCSV(parsedProducts) {
 					row.tags.value += tags[j];
 					if (j < tags.length-1) row.tags.value += ",";
 				}
+			} else {
+
+				// Handle variant image for all non-parent rows
+				if (variant.mainImage) row.variantImage.value = variant.mainImage;
 			}
+
+
 
 			// Handle variant options
 			var options = [];
@@ -414,9 +420,6 @@ function createShopifyCSV(parsedProducts) {
 				row['o'+(parseInt(j)+1)+'name'].value = options[j].name;
 				row['o'+(parseInt(j)+1)+'value'].value = options[j].value;
 			};
-
-			// Handle variant main image
-			if (variant.mainImage) images.push(variant.mainImage);
 
 			// Handle basic variant values
 			row.type.value = parent.category;
